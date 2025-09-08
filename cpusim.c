@@ -1,32 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "instruction.h"
+#include "fileops.h"
+
 #define DEFAULT_HEAP_SIZE 256
 #define MAIN_MEM_SIZE 2048
 #define PCB_TABLE_SIZE 10
-
-enum JobState {
-    NEW = 1,
-    READY = 2,
-    RUNNING = 3,
-    TERMINATED = -1
-};
-
-enum InstructionType {
-    HALT = 0,
-    ADD = 1,
-    SUB = 2,
-    MUL = 3,
-    DIV = 4,
-    LOAD = 5,
-    STORE = 6,
-    READ = 7,
-    WRITE = 8,
-    COPY = 9,
-    JUMP = 10,
-    JUMPIFZERO = 11,
-    JUMPIFPOS = 12
-};
 
 typedef struct {
     int pid;
@@ -49,19 +29,6 @@ typedef struct {
     Node* front;
     Node* rear;
 } Queue;
-
-typedef struct {
-    uint32_t EAX;   // Accumulator
-    uint32_t EBX;   // General purpose reg
-    uint32_t ECX;   // Loop counter
-    uint32_t EDX;   // Data
-    uint32_t ESI;   // Source index register
-    uint32_t EDI;   // Destination index register
-    uint32_t EBP;   // Base pointer (stack frames)
-    uint32_t ESP;   // Stack pointer
-    uint32_t EIP;   // Instruction pointer (program counter)
-    uint32_t EFLAGS; // Status flags 
-} CPURegisters;
 
 // global data
 int mainMemory[MAIN_MEM_SIZE]; // main memory table
@@ -126,11 +93,6 @@ PCB* createProcess(char *processInfo) {
 
     token = strtok(NULL, " ");
     instructionBase = atoi(token); // second int is instruction base
-
-    /*
-    token = strtok(NULL, " ");
-    mainMemLimit = atoi(token); // third int is main memory limit 
-    */ // not needed?
 
     pid = allocatePID();
 

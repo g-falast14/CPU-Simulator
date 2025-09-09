@@ -7,10 +7,12 @@
 #define DEFAULT_HEAP_SIZE 256
 #define MAIN_MEM_SIZE 2048
 #define PCB_TABLE_SIZE 10
+#define NUM_COMMANDS 2
 
+
+// individual process control block
 typedef struct {
     int pid;
-    enum JobState state;
     int priority;
     int pc;
     int *registers;
@@ -20,15 +22,17 @@ typedef struct {
     int requiredSize; // how much memory is allocated
 } PCB;
 
-typedef struct Node {
-    PCB job;
-    struct Node* next;
-} Node;
-
+// command struct for global table
 typedef struct {
-    Node* front;
-    Node* rear;
-} Queue;
+    const char *name;
+    void (*func)(int, char**);  
+} Command;
+
+Command commands[] = {
+    {"exe", execute_program},
+    {"goodbye", goodbye}
+};
+
 
 // global data
 int mainMemory[MAIN_MEM_SIZE]; // main memory table
@@ -37,13 +41,48 @@ PCB *PCBTable[PCB_TABLE_SIZE];
 int nextPCBIdx = 0; // next available pcb table index
 
 // methods
+void execute_program(char *program);
+void goodbye();
+int is_blank(const char *s);
+Command* findCommand(const char *name);
+
+
 PCB* createProcess(char *processInfo);
 void printPCB(PCB *pcb);
 int allocatePID();
 int allocateMemory(PCB *pcb);
 
 int main() {
-  
+    
+    char user_inp[100];
+
+    while (true) {
+        printf("gcmd > ");
+
+        fgets(user_inp, sizeof(user_inp), stdin);
+        // check for empty input
+        if (is_blank(user_inp)) {
+            continue;
+        }
+
+        char *command = strtok(user_inp, " ");
+        // check for exit
+        if (strcmp(command, "goodbye") == 0) {
+            break;
+        }
+
+        // tokenize input
+        char *tokens[2];
+        int token_count = 0;
+        while (command != NULL) {
+            tokens[token_count++] = command;
+            command = strtok(NULL, " ");
+        }
+
+
+
+    }
+
     char buffer[256];
     int numProcesses;
 
@@ -160,7 +199,22 @@ void tokenizeInstruction(char *buffer) {
     
 }
 
+int is_blank(const char *s) {
+    while (*s) {
+        if (!isspace((unsigned char)*s)) return 0;
+        s++;
+    }
+    return 1;
+}
 
+Command* findCommand(const char *name) {
+    for (int i = 0; i < numCommands; i++) {
+        if (strcmp(name, commands[i].name) == 0) {
+            return &commands[i];  // return pointer to matching command
+        }
+    }
+    return NULL; // not found
+}
 
 void printPCB(PCB *pcb) {
     printf("PID: %d\n", pcb->pid);

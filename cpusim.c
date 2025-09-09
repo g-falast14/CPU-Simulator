@@ -12,15 +12,21 @@
 
 // individual process control block
 typedef struct {
-    int pid;
+    int pid; 
     int priority;
-    int pc;
+    int pc; // program counter
+    int sp; // stack pointer
+    int state; // current execution state
     int *registers;
     int instructionBase; // where instructions begin in logical mem
     int mainMemBase; // first address in main mem
     int mainMemLimit; // last address in main mem
     int requiredSize; // how much memory is allocated
 } PCB;
+
+typedef struct {
+
+} Register;
 
 // command struct for global table
 typedef struct {
@@ -33,6 +39,14 @@ Command commands[] = {
     {"goodbye", goodbye}
 };
 
+typedef enum {
+    NEW = 0,        // Just created, not yet admitted to ready queue
+    READY = 1,      // Waiting to be scheduled on CPU
+    RUNNING = 2,    // Currently executing on CPU
+    WAITING = 3,    // Waiting for I/O or an event
+    TERMINATED = -1  // Finished execution
+} ProcessState;
+
 
 // global data
 int mainMemory[MAIN_MEM_SIZE]; // main memory table
@@ -41,16 +55,16 @@ PCB *PCBTable[PCB_TABLE_SIZE];
 int nextPCBIdx = 0; // next available pcb table index
 
 // methods
-void execute_program(char *program);
+void execute_program(char *tokens, int token_count);
 void goodbye();
 int is_blank(const char *s);
-Command* findCommand(const char *name);
+Command* find_command(const char *name);
 
 
-PCB* createProcess(char *processInfo);
-void printPCB(PCB *pcb);
-int allocatePID();
-int allocateMemory(PCB *pcb);
+PCB* create_process(char *tokens, int token_count);
+void print_PCB(PCB *pcb);
+int allocate_PID();
+int allocate_mem(PCB *pcb);
 
 int main() {
     
@@ -72,18 +86,25 @@ int main() {
         }
 
         // tokenize input
-        char *tokens[2];
+        char *tokens[10];
         int token_count = 0;
         while (command != NULL) {
             tokens[token_count++] = command;
             command = strtok(NULL, " ");
         }
 
-
-
+        Command* cmd = find_command(tokens[0]);
+        
+        if (cmd) {
+            cmd->func(token_count, tokens);
+        } else {
+            printf("Command %s not found\n", cmd->name);
+        }
+        // end loop
     }
 
-    char buffer[256];
+    // old logic
+    /*char buffer[256];
     int numProcesses;
 
     // read program metadata
@@ -96,7 +117,7 @@ int main() {
     int test = allocateMemory(pcb);
 
     // load program into memory
-    loadProgram(pcb);
+    load_program();
 
     while (fgets(buffer, sizeof(buffer), stdin)) {
         // fetch instruction
@@ -118,26 +139,31 @@ int main() {
 
         printPCB(pcb);
     }
+    */
 
     return 0;
 }
 
-PCB* createProcess(char *processInfo) {
+void execute_program(char *tokens, int token_count) {
+    PCB *pcb = create_process(tokens, token_count);
+
+
+}
+
+
+PCB* create_process(char *tokens, int token_count) {
     PCB *pcb = malloc(sizeof(PCB));
     int requiredSize, instructionBase, mainMemLimit, pid;
 
-    // parse process info
-    char *token = strtok(processInfo, " ");
-    requiredSize = atoi(token); // first int is required memory size
-
-    token = strtok(NULL, " ");
-    instructionBase = atoi(token); // second int is instruction base
+    int instr_count = count_instr(tokens[0]);
 
     pid = allocatePID();
 
+    //TODO Setup registers that match assembler
+
     // set appropriate fields
     pcb->pid = pid;
-    pcb->instructionBase = instructionBase;
+    pcb->instructionBase = 0; // change in future 
     pcb->state = NEW;
     pcb->priority = -1; // default priority
     pcb->registers = malloc(sizeof(int) * 8); // 8 temp registers
@@ -160,7 +186,7 @@ int allocatePID() {
     return -1;
 }
 
-int allocateMemory(PCB *pcb) {
+int allocate_mem(PCB *pcb) {
     int targetMemSize = pcb->requiredSize;
     int tail = 0, front = 0; // sliding window
 
@@ -207,8 +233,8 @@ int is_blank(const char *s) {
     return 1;
 }
 
-Command* findCommand(const char *name) {
-    for (int i = 0; i < numCommands; i++) {
+Command* find_command(const char *name) {
+    for (int i = 0; i < NUM_COMMANDS; i++) {
         if (strcmp(name, commands[i].name) == 0) {
             return &commands[i];  // return pointer to matching command
         }

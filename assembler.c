@@ -3,7 +3,6 @@
 #include <string.h>
 #include "instruction.h"
 
-
 #define OPCODE_TABLE_SIZE 8
 #define REG_TABLE_SIZE 8
 #define MAX_PROGRAM_SIZE 60

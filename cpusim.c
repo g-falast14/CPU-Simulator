@@ -2,13 +2,20 @@
 #include <stdlib.h>
 #include <string.h>
 #include "instruction.h"
-#include "fileops.h"
+#include "processops.h"
+#include "cpu.h"
 
 #define DEFAULT_HEAP_SIZE 256
 #define MAIN_MEM_SIZE 2048
 #define PCB_TABLE_SIZE 10
 #define NUM_COMMANDS 2
 
+// Structs
+// command struct for global table
+typedef struct {
+    const char *name;
+    void (*func)(char**, int);  
+} Command;
 
 // individual process control block
 typedef struct {
@@ -24,21 +31,7 @@ typedef struct {
     int requiredSize; // how much memory is allocated
 } PCB;
 
-typedef struct {
-
-} Register;
-
-// command struct for global table
-typedef struct {
-    const char *name;
-    void (*func)(int, char**);  
-} Command;
-
-Command commands[] = {
-    {"exe", execute_program},
-    {"goodbye", goodbye}
-};
-
+// process state enum
 typedef enum {
     NEW = 0,        // Just created, not yet admitted to ready queue
     READY = 1,      // Waiting to be scheduled on CPU
@@ -47,37 +40,47 @@ typedef enum {
     TERMINATED = -1  // Finished execution
 } ProcessState;
 
+// methods
+void execute_program(char **tokens, int token_count);
+//void goodbye();
+int is_blank(const char *s);
+Command* find_command(const char *name);
+
+PCB* create_process(char **tokens, int token_count);
+void print_PCB(PCB *pcb);
+int allocate_PID();
+int allocate_mem(PCB *pcb);
+void load_program(char *filename);
+
+Command commands[] = {
+    {"exe", execute_program}
+    //{"goodbye", goodbye}
+};
 
 // global data
+CPU *cpu;
 int mainMemory[MAIN_MEM_SIZE]; // main memory table
 int mainMemoryBitmap[MAIN_MEM_SIZE]; // represents whether an address is allocated
 PCB *PCBTable[PCB_TABLE_SIZE]; 
 int nextPCBIdx = 0; // next available pcb table index
 
-// methods
-void execute_program(char *tokens, int token_count);
-void goodbye();
-int is_blank(const char *s);
-Command* find_command(const char *name);
 
-
-PCB* create_process(char *tokens, int token_count);
-void print_PCB(PCB *pcb);
-int allocate_PID();
-int allocate_mem(PCB *pcb);
 
 int main() {
     
-    char user_inp[100];
+    char user_inp[100]; // stdin array
+    cpu = malloc(sizeof(cpu)); // single-core cpu
 
-    while (true) {
+
+    while (1) {
         printf("gcmd > ");
 
         fgets(user_inp, sizeof(user_inp), stdin);
-        // check for empty input
+        
+        /* check for empty input
         if (is_blank(user_inp)) {
             continue;
-        }
+        } */
 
         char *command = strtok(user_inp, " ");
         // check for exit
@@ -96,70 +99,36 @@ int main() {
         Command* cmd = find_command(tokens[0]);
         
         if (cmd) {
-            cmd->func(token_count, tokens);
+            cmd->func(tokens, token_count);
         } else {
             printf("Command %s not found\n", cmd->name);
         }
         // end loop
     }
 
-    // old logic
-    /*char buffer[256];
-    int numProcesses;
-
-    // read program metadata
-    fgets(buffer, sizeof(buffer), stdin);
-
-    // create process control block
-    PCB* pcb = createProcess(buffer);
-
-    // allocate main memory
-    int test = allocateMemory(pcb);
-
-    // load program into memory
-    load_program();
-
-    while (fgets(buffer, sizeof(buffer), stdin)) {
-        // fetch instruction
-        char *mnemonic = strtok(buffer, " ");
-
-
-        // check for new program
-        
-        
-        
-
-        
-        printf("Base address: %d\n", test);
-
-
-        // TODO: load process into main memory
-        // loadProcess(pcb);
-
-
-        printPCB(pcb);
-    }
-    */
-
     return 0;
 }
 
-void execute_program(char *tokens, int token_count) {
+void execute_program(char **tokens, int token_count) {
     PCB *pcb = create_process(tokens, token_count);
 
+    if (allocate_mem(pcb) == 67) {
+        // ERROR
+    }
+
+    // read instructions and load program into memory
+    load_program("temp");
 
 }
 
 
-PCB* create_process(char *tokens, int token_count) {
+PCB* create_process(char **tokens, int token_count) {
     PCB *pcb = malloc(sizeof(PCB));
     int requiredSize, instructionBase, mainMemLimit, pid;
 
     int instr_count = count_instr(tokens[0]);
 
-    pid = allocatePID();
-
-    //TODO Setup registers that match assembler
+    pid = allocate_PID();
 
     // set appropriate fields
     pcb->pid = pid;
@@ -177,7 +146,7 @@ PCB* create_process(char *tokens, int token_count) {
     return pcb;
 }
 
-int allocatePID() {
+int allocate_PID() {
     for (int i = 0; i < PCB_TABLE_SIZE; i++) {
         if (PCBTable[i] != NULL) {
             return i;
@@ -217,21 +186,15 @@ int allocate_mem(PCB *pcb) {
     return 67;
 }
 
-void loadProgram() {
-
-}
-
-void tokenizeInstruction(char *buffer) {
-    
-}
-
+// TODO fix to check for blank user input
+/*
 int is_blank(const char *s) {
     while (*s) {
         if (!isspace((unsigned char)*s)) return 0;
         s++;
     }
     return 1;
-}
+} */
 
 Command* find_command(const char *name) {
     for (int i = 0; i < NUM_COMMANDS; i++) {
@@ -240,6 +203,10 @@ Command* find_command(const char *name) {
         }
     }
     return NULL; // not found
+}
+
+void load_program(char *filename) {
+
 }
 
 void printPCB(PCB *pcb) {
@@ -251,4 +218,3 @@ void printPCB(PCB *pcb) {
     printf("Main Memory Base: %d\n", pcb->mainMemBase);
     printf("Main Memory Limit: %d\n", pcb->mainMemLimit);
 }
-

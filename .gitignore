@@ -1,0 +1,14 @@
+# Build artifacts
+a.out
+assembler
+cpusim
+*.o
+*.dSYM/
+
+# Text outputs
+output.txt
+output.asm
+
+# Editor/IDE files
+.vscode/
+.DS_Store

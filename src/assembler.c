@@ -4,40 +4,12 @@
 #include "instruction.h"
 #include "cpu.h"
 
-
 #define OPCODE_TABLE_SIZE 8
 #define REG_TABLE_SIZE 8
 #define MAX_PROGRAM_SIZE 60
 #define OPCODE_MASK   0xE000  // 1110 0000 0000 0000
 #define REG_MASK      0x1F00  // 0001 1111 0000 0000
 #define OPERAND_MASK  0x00FF  // 0000 0000 1111 1111
-
-typedef struct {
-    const char *name; // human readable register name
-    uint8_t code; // numeric register code
-} Register;
-
-Instruction opcode_lut[] = {
-    {"LOD", 0x0}, // LOAD 5 
-    {"STO", 0x1},
-    {"ADD", 0x2},
-    {"ADI", 0x3},
-    {"AND", 0x4},
-    {"JMP", 0x5},
-    {"JMZ", 0x6},
-    {"HLT", 0x7}
-};
-
-Register register_lut[] = {
-    {"GPA", 0x0}, // general purpose a
-    {"GPB", 0x1}, // general purpose b
-    {"GPC", 0x2}, // general purpose c
-    {"GPD", 0x3}, // general purpose d
-    {"PGC", 0x4}, // program counter
-    {"STP", 0x5}, // stack pointer
-    {"ISR", 0x6}, // instruction register
-    {"FLG", 0x7}  // flags
-};
 
 Instruction* opcode_lu(char *mnemonic);
 Instruction* create_instr(Instruction *format, char **args);
@@ -61,7 +33,7 @@ int main() {
             user_instr = strtok(NULL, " ");
         }
 
-        // After args[] is filled:
+        // After args[] is filled, replace newlines with nulls
         for (int i = 0; i < args_idx; i++) {
             args[i][strcspn(args[i], "\n")] = '\0';
         }
@@ -78,7 +50,7 @@ int main() {
         Instruction *instr = create_instr(format, args);
         print_instruction(instr);
 
-        write_to_file(instr, "output.txt");
+        write_to_file(instr, "output.asm");
         printf("File succesfully written to\n");
 
     }

@@ -29,4 +29,11 @@ Register register_lut[] = {
     {"FLG", 0x7}  // flags
 };
 
+// old register struct incase
+/*
+typedef struct {
+    const char *name; // human readable register name
+    uint8_t code; // numeric register code
+} Register; */
+
 #endif

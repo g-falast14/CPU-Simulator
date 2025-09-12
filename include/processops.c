@@ -3,7 +3,7 @@
 int count_instr(const char *filename) {
     FILE *file = fopen(filename, "r");
     if (file == NULL) {
-        perror("Failed to open file");
+        printf("Could not open this file.\n");
         return -1;
     }
 

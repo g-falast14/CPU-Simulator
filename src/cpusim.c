@@ -10,13 +10,6 @@
 #define PCB_TABLE_SIZE 10
 #define NUM_COMMANDS 2
 
-// Structs
-// command struct for global table
-typedef struct {
-    const char *name;
-    void (*func)(char**, int);  
-} Command;
-
 // individual process control block
 typedef struct {
     int pid; 
@@ -39,22 +32,28 @@ typedef enum {
     TERMINATED = -1  // Finished execution
 } ProcessState;
 
-// methods
+typedef struct {
+    const char *name;
+    void (*func)(char**, int);  
+} Command;
+
 void execute_program(char **tokens, int token_count);
-//void goodbye();
+Command commands[] = {
+    {"exe", execute_program}
+    //{"goodbye", goodbye}
+};
+
+// methods
+
+void strip_newline(char *str);
 int is_blank(const char *s);
 Command* find_command(const char *name);
-
 PCB* create_process(char **tokens, int token_count);
 void print_PCB(PCB *pcb);
 int allocate_PID();
 int allocate_mem(PCB *pcb);
 void load_program(char *filename, PCB *pcb);
 
-Command commands[] = {
-    {"exe", execute_program}
-    //{"goodbye", goodbye}
-};
 
 // global data
 CPU *cpu;
@@ -62,7 +61,6 @@ char *main_mem[MAIN_MEM_SIZE]; // main memory table
 int main_mem_bitmap[MAIN_MEM_SIZE]; // represents whether an address is allocated
 PCB *pcb_table[PCB_TABLE_SIZE]; 
 int next_PCB_Idx = 0; // next available pcb table index
-
 
 
 int main() {
@@ -73,17 +71,15 @@ int main() {
         printf("gcmd > ");
 
         fgets(user_inp, sizeof(user_inp), stdin);
-        // exe "output.txt"
         /* check for empty input
         if (is_blank(user_inp)) {
             continue;
         } */
 
+        // replace newline from fgets with null
+        strip_newline(user_inp);
+
         char *command = strtok(user_inp, " ");
-        // check for exit
-        if (strcmp(command, "goodbye") == 0) {
-            break;
-        }
 
         // tokenize input
         char *tokens[10];
@@ -95,18 +91,20 @@ int main() {
 
         Command* cmd = find_command(tokens[0]);
         
+        printf("Executing command: %s using input file: %s.\n", cmd->name, tokens[1]);
+
         if (cmd) {
             cmd->func(tokens, token_count);
         } else {
             printf("Command %s not found\n", cmd->name);
         }
-        // end loop
     }
 
     return 0;
 }
 
 void execute_program(char **tokens, int token_count) {
+    printf("Entered execute_program\n");
     PCB *pcb = create_process(tokens, token_count);
 
     if (allocate_mem(pcb) == 67) {
@@ -120,12 +118,11 @@ void execute_program(char **tokens, int token_count) {
 
 }
 
-
 PCB* create_process(char **tokens, int token_count) {
     PCB *pcb = malloc(sizeof(PCB));
     int instr_count, pid;
 
-    instr_count = count_instr(tokens[0]);
+    instr_count = count_instr(tokens[1]);
     pid = allocate_PID();
 
     // set appropriate fields
@@ -190,7 +187,9 @@ Command* find_command(const char *name) {
 
 void load_program(char *filename, PCB *pcb) {
 
+    printf("Entered load program\n");
     FILE *fptr = fopen(filename, "r");
+
     char buffer[50];
     
     int mem_base = pcb->main_mem_base;
@@ -198,15 +197,13 @@ void load_program(char *filename, PCB *pcb) {
     // read line by line into mem
     while (fgets(buffer, sizeof(buffer), fptr) != NULL) {
         
-        // replace newline with null terminator
-        size_t len = strlen(buffer);
-        if (len > 0 && buffer[len - 1] == '\n') {
-            buffer[len - 1] = '\0';  // overwrite newline with null terminator
-        }
+        strip_newline(buffer);
+        printf("%s\n", buffer);
         
         // copy the entire line into main_mem[mem_base]
-        strcpy(main_mem[mem_base], buffer);
-        mem_base++;
+        main_mem[mem_base] = malloc(strlen(buffer) + 1); // allocate memory for the string
+        strcpy(main_mem[mem_base++], buffer);
+        printf("Reached end while\n");
     }
 
     // set program counter
@@ -223,4 +220,11 @@ void printPCB(PCB *pcb) {
     printf("PC: %d\n", pcb->pc);
     printf("Main Memory Base: %d\n", pcb->main_mem_base);
     printf("Main Memory Limit: %d\n", pcb->main_mem_limit);
+}
+
+void strip_newline(char *str) {
+    size_t len = strlen(str);
+    if (len > 0 && str[len - 1] == '\n') {
+        str[len - 1] = '\0';
+    }
 }

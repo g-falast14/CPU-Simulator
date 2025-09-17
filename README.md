@@ -15,53 +15,53 @@ Main memory is simulated as an array of 2048 entries. Each entry represents one 
 My instruction set contains 8 instructions that require 2 arguments each for simplicity, even though not every instruction will use both. The following is an outline of each instruction:
 
 LOD: Load (Opcode 0)
-Arg1: Always an internal CPU register
-Arg2: Always a valid memory address
+- Arg1: Always an internal CPU register
+- Arg2: Always a valid memory address
 
 ----------------------------------------
 
 STO: Store (Opcode 1)
-Arg1: Always a valid memory address
-Arg2: Always an internal CPU register
+- Arg1: Always a valid memory address
+- Arg2: Always an internal CPU register
 
 ----------------------------------------
 
 ADD: Add (Opcode 2)
-Arg1: Always an internal CPU register
-Arg2: Always an internal CPU register
+- Arg1: Always an internal CPU register
+- Arg2: Always an internal CPU register
 
 ----------------------------------------
 
 ADI: Add Immediate (Opcode 3)
-Arg1: Always an internal CPU register
-Arg2: Always a signed decimal value
+- Arg1: Always an internal CPU register
+- Arg2: Always a signed decimal value
 
 ----------------------------------------
 
 JMP: Jump (Opcode 4)
-Arg1: Always a valid memory address
-Note: JMP requires 2 args, but the second
+- Arg1: Always a valid memory address
+- Note: JMP requires 2 args, but the second
 arg will not be used.
 
 ----------------------------------------
 
 JMZ: Jump If Zero (Opcode 5)
-Arg1: Always a valid memory address
-Arg2: Always an internal CPU register
+- Arg1: Always a valid memory address
+- Arg2: Always an internal CPU register
 
 ----------------------------------------
 
 JEQ: Jump If Equal (Opcode 6)
-Arg1: Always a valid memory address
-Arg2: Always an internal CPU register
-Note: JEQ will always compare Arg2 with
+- Arg1: Always a valid memory address
+- Arg2: Always an internal CPU register
+- Note: JEQ will always compare Arg2 with
 the value in the GPA register to determine 
 whether to jump or not.
 
 ----------------------------------------
 
 HLT: Halt (Opcode 7)
-Note: 2 args need to be passed for HLT, 
+- Note: 2 args need to be passed for HLT, 
 but they will both be ignored. -1 is passed 
 by convention.
 

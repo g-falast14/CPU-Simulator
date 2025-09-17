@@ -2,12 +2,13 @@
 a.out
 assembler
 cpusim
+assm
+proj
 *.o
 *.dSYM/
 
 # Text outputs
 output.txt
-output.asm
 
 # Editor/IDE files
 .vscode/

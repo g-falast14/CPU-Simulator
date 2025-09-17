@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include "processops.h"
 
 int count_instr(const char *filename) {
     FILE *file = fopen(filename, "r");
@@ -16,6 +17,13 @@ int count_instr(const char *filename) {
 
     fclose(file);
     return count;
+}
+
+void strip_newline(char *str) {
+    size_t len = strlen(str);
+    if (len > 0 && str[len - 1] == '\n') {
+        str[len - 1] = '\0';
+    }
 }
 
 // TODO fix to check for blank user input

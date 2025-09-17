@@ -3,6 +3,7 @@
 #include <string.h>
 #include "instruction.h"
 #include "cpu.h"
+#include "processops.h"
 
 #define OPCODE_TABLE_SIZE 8
 #define REG_TABLE_SIZE 8
@@ -22,7 +23,6 @@ int main() {
     char buffer[256];
 
     while (fgets(buffer, sizeof(buffer), stdin)) {
-        printf("Begin loop\n");
         char *args[3]; // holds op string and added args
         int args_idx = 0;
 
@@ -36,11 +36,7 @@ int main() {
         // After args[] is filled, replace newlines with nulls
         for (int i = 0; i < args_idx; i++) {
             args[i][strcspn(args[i], "\n")] = '\0';
-        }
-
-        for (int i = 0; i < args_idx; i++) {
-            printf("args[%d] = %s\n", i, args[i]);
-        }
+        } 
 
         // fetch appropriate format
         char *mnemonic_lookup = strtok(buffer, " ");
@@ -48,11 +44,8 @@ int main() {
 
         // create instruction
         Instruction *instr = create_instr(format, args);
-        print_instruction(instr);
 
-        write_to_file(instr, "output.asm");
-        printf("File succesfully written to\n");
-
+        write_to_file(instr, "output2.txt");
     }
     
     printf("Executed succesfully, exiting\n");
@@ -62,33 +55,46 @@ int main() {
 Instruction* opcode_lu(char *mnemonic) {
     // locate opcode format
     for (int i = 0; i < OPCODE_TABLE_SIZE; i++) {
-        printf("%s == %s\n", mnemonic, opcode_lut[i].mnemonic);
         if (strcmp(mnemonic, opcode_lut[i].mnemonic) == 0) {
             // matching mnemonic, instruction format
-            printf("Opcode match found\n");
             return &opcode_lut[i];
         }
     }
-    printf("No opcode found\n");
     return NULL; // change to throw invalid instruction exception
 }
 
 Instruction* create_instr(Instruction *format, char **args) {
-    // check for oob mem access
+    // TODO check for oob mem access
+    /*
     int opcode = format->opcode; 
-    if ((opcode == 0x0 || opcode == 0x5 || opcode == 0x6) && atoi(args[2]) > 0xFF) { // check mem location for load and jmp/jz
+    if ((opcode == 0 || opcode == 5 || opcode == 6) && atoi(args[2]) > 0xFF) { // check mem location for load and jmp/jz
         return NULL;  
     }   
-    if (opcode == 0x1 && atoi(args[1]) > 0xFF) { // check mem location for store
+    if (opcode == 0x1 && atoi(args[1]) > 2048) { // check mem location for store
         return NULL;
-    } 
+    }  */
 
     Instruction *instr = malloc(sizeof(Instruction));
 
+    int opcode = format->opcode;
+    int destination = -1, source = -1;
+
+    if (opcode == 0 || opcode == 2 || opcode == 3) { // lookup register code for LOD, ADD, ADI
+        destination = get_register_code(args[1]);
+    } else {  // otherwise, store passed memory location 
+        destination = atoi(args[1]);
+    }
+
+    if (opcode == 1 || opcode == 2 || opcode == 5 || opcode == 6) { // lookup register code for STO, ADD, JMQ, JEQ
+        source = get_register_code(args[2]);
+    } else {  // otherwise, store passed memory location 
+        source = atoi(args[2]);
+    }
+
     // set fields
     instr->mnemonic = args[0];
-    instr->dest = args[1];
-    instr->src = args[2];
+    instr->dest = destination; //args[1];
+    instr->src = source; //args[2];
     instr->opcode = format->opcode;
 
     return instr;
@@ -96,7 +102,6 @@ Instruction* create_instr(Instruction *format, char **args) {
 
 int get_register_code(char *reg) {
     for (int i = 0; i < REG_TABLE_SIZE; i++) {
-        printf("%s == %s\n", register_lut[i].name, reg);
         if (strcmp(register_lut[i].name, reg) == 0) {
             return register_lut[i].code;
         }
@@ -106,26 +111,18 @@ int get_register_code(char *reg) {
 }
 
 void write_to_file(Instruction *instr, char *filename) {
-    
-    int opcode = instr->opcode;
-    // store immediate as destination if sto, jmp, jmz, or hlt instruction
-    int destination = (opcode == 0x1 || opcode == 0x5 || opcode == 0x6 || opcode == 0x7) ? atoi(instr->dest) : get_register_code(instr->dest);
-
-    // store immediate as source if lod, adi, jmp, or hlt instruction
-    int source = (opcode == 0x0 || opcode == 0x3 || opcode == 0x5 || opcode == 0x7) ? atoi(instr->src) : get_register_code(instr->src);
 
     FILE *f = fopen(filename, "a");
 
-    fprintf(f, "%d %d %d\n", opcode, destination, source);
+    fprintf(f, "%d %d %d\n", instr->opcode, instr->dest, instr->src);
 
     fclose(f);
-
 }
 
 void print_instruction(const Instruction *instr) {
     printf("Instruction:\n");
     printf("  Mnemonic:   %s\n", instr->mnemonic);
     printf("  Opcode:     0x%X (%d)\n", instr->opcode, instr->opcode);
-    printf("  Dest Reg:   %s\n", instr->dest);    // print as string
-    printf("  Mem Src:    %s\n", instr->src);     // print as string
+    printf("  Destination:   %d\n", instr->dest);    // print as string
+    printf("  Source:    %d\n", instr->src);     // print as string
 }

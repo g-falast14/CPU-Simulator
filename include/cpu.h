@@ -2,10 +2,16 @@
 #define CPU_H
 
 typedef struct {
-    const char *name; // human readable register name
-    int code; // numeric register code
-    int value; // numeric cpu value
+    const char *name;
+    int code;
+    int value;
 } Register;
+
+typedef struct {
+    const char *name;
+    int code;
+    char *value;
+} Instr_Register;
 
 typedef struct {
     Register GPA;
@@ -14,26 +20,12 @@ typedef struct {
     Register GPD;
     Register PGC;
     Register STP;
-    Register ISR;
+    Instr_Register ISR;
     Register FLG;
 } CPU;
 
-Register register_lut[] = {
-    {"GPA", 0x0}, // general purpose a
-    {"GPB", 0x1}, // general purpose b
-    {"GPC", 0x2}, // general purpose c
-    {"GPD", 0x3}, // general purpose d
-    {"PGC", 0x4}, // program counter
-    {"STP", 0x5}, // stack pointer
-    {"ISR", 0x6}, // instruction register
-    {"FLG", 0x7}  // flags
-};
 
-// old register struct incase
-/*
-typedef struct {
-    const char *name; // human readable register name
-    uint8_t code; // numeric register code
-} Register; */
+extern Register register_lut[];
+int get_register_code(char *reg);
 
 #endif

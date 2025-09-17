@@ -33,18 +33,14 @@ typedef enum {
 } ProcessState;
 
 typedef struct {
-    const char *name;
-    void (*func)(char**, int);  
+    const char *name; // func name
+    void (*func)(char**, int);  // function pointer with args, argc
 } Command;
 
-void execute_program(char **tokens, int token_count);
-Command commands[] = {
-    {"exe", execute_program}
-    //{"goodbye", goodbye}
-};
+
 
 // methods
-
+void execute_program(char **tokens, int token_count);
 void strip_newline(char *str);
 int is_blank(const char *s);
 Command* find_command(const char *name);
@@ -55,17 +51,31 @@ int allocate_mem(PCB *pcb);
 void load_program(char *filename, PCB *pcb);
 
 
+// Define and initialize the global CPU
+CPU cpu = {
+    {"GPA", 0, 0},
+    {"GPB", 1, 0},
+    {"GPC", 2, 0},
+    {"GPD", 3, 0},
+    {"PGC", 4, 0},
+    {"STP", 5, 0}, 
+    {"ISR", 6, NULL}, // instruction reg holds buffer instead of int value
+    {"FLG", 7, 0} 
+};
+
+Command commands[] = {
+    {"exe", execute_program}
+    //{"goodbye", goodbye}
+};
+
 // global data
-CPU *cpu;
 char *main_mem[MAIN_MEM_SIZE]; // main memory table
 int main_mem_bitmap[MAIN_MEM_SIZE]; // represents whether an address is allocated
 PCB *pcb_table[PCB_TABLE_SIZE]; 
 int next_PCB_Idx = 0; // next available pcb table index
 
-
 int main() {
     char user_inp[100]; // stdin array
-    cpu = malloc(sizeof(cpu)); // single-core cpu
 
     while (1) {
         printf("gcmd > ");
@@ -91,8 +101,6 @@ int main() {
 
         Command* cmd = find_command(tokens[0]);
         
-        printf("Executing command: %s using input file: %s.\n", cmd->name, tokens[1]);
-
         if (cmd) {
             cmd->func(tokens, token_count);
         } else {
@@ -113,8 +121,53 @@ void execute_program(char **tokens, int token_count) {
 
     char *filename = tokens[1];
 
-    // read instructions and load program into memory
+    // load program into memory
     load_program(filename, pcb);
+
+    printf("Load program complete.\n");
+
+    // load first value in pc
+    cpu.PGC.value = pcb->main_mem_base;
+
+    // store first instruction
+    cpu.ISR.value = main_mem[cpu.PGC.value];
+
+    // execute instructions
+    while (1) {
+        
+        // mutable copy
+        char buffer[100];
+        strcpy(buffer, cpu.ISR.value);
+
+        char *tokens[3];
+        int token_count = 0;
+
+        // tokenize instructions
+        char *instruction = strtok(buffer, " ");
+        while (instruction != NULL) {
+            tokens[token_count++] = instruction;
+            instruction = strtok(NULL, " ");
+        }
+
+        if (strcmp(tokens[0], "0") == 0) { // Load instruction
+            printf("LOD instruction\n");
+        } else if (strcmp(tokens[0], "1") == 0) {
+            printf("STO instruction\n");
+        } else if (strcmp(tokens[0], "2") == 0) {
+            printf("ADD instruction\n");
+        } else if (strcmp(tokens[0], "3") == 0) {
+            printf("JEQ instruction\n");
+        } else if (strcmp(tokens[0], "4") == 0) {
+            printf("ADI instruction\n");
+        } else if (strcmp(tokens[0], "5") == 0) {
+            printf("JMP instruction\n");
+        } else if (strcmp(tokens[0], "6") == 0) {
+            printf("JMZ instruction\n");
+        } else if (strcmp(tokens[0], "7") == 0) {
+            printf("HLT instruction\n");
+        }
+        
+    }
 
 }
 
